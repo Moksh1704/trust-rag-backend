@@ -22,7 +22,7 @@ The system extracts content from blogs, YouTube videos, and PubMed articles, enr
 ## Hierarchical Chunking
 - Parent chunks
 - Child chunks
-- Overlapping semantic chunking
+- Overlapping hierarchical chunking
 
 ## Trust Score Calculation
 - Author credibility
@@ -159,7 +159,7 @@ Smaller overlapping chunks for precise retrieval.
 ## Benefits
 - Improved semantic search
 - Better retrieval quality
-- Enhanced embedding relevance
+- Improved downstream retrieval quality
 
 ---
 
