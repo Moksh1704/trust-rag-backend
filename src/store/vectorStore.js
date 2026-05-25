@@ -1,20 +1,32 @@
-const vectorStore = [];
+export const vectorStore = [];
 
-export function addEmbeddings(
-  embeddingObjects
-) {
+// ========================================
+// ADD EMBEDDING
+// ========================================
 
-  vectorStore.push(
-    ...embeddingObjects
-  );
-}
+export const addEmbedding = (
+  embedding
+) => {
 
-export function getAllEmbeddings() {
+  vectorStore.push(embedding);
+};
 
-  return vectorStore;
-}
+// ========================================
+// GET ALL EMBEDDINGS
+// ========================================
 
-export function clearVectorStore() {
+export const getAllEmbeddings =
+  () => {
 
-  vectorStore.length = 0;
-}
+    return vectorStore;
+  };
+
+// ========================================
+// CLEAR VECTOR STORE
+// ========================================
+
+export const clearVectorStore =
+  () => {
+
+    vectorStore.length = 0;
+  };

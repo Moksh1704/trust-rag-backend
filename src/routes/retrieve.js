@@ -4,9 +4,7 @@ import {
   getAllEmbeddings
 } from '../store/vectorStore.js';
 
-import {
-  generateEmbedding
-} from '../services/localEmbedding.js';
+
 
 import {
   vectorSearch

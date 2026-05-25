@@ -1,68 +1,112 @@
 import axios from 'axios';
-import { parseStringPromise } from 'xml2js';
+import * as cheerio from 'cheerio';
 
-export async function scrapePubMed(url) {
+export const scrapePubMed = async (
+  url
+) => {
 
   try {
 
-    // Extract PubMed ID
-    const pubmedId = url.split('/').filter(Boolean).pop();
+    // ========================================
+    // FETCH HTML
+    // ========================================
 
-    if (!pubmedId) {
-      throw new Error('Invalid PubMed URL');
-    }
+    const { data } =
+      await axios.get(url);
 
-    // Fetch article XML
-    const apiUrl =
-      `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=${pubmedId}&retmode=xml`;
+    const $ = cheerio.load(data);
 
-    const response = await axios.get(apiUrl);
-
-    // Parse XML
-    const parsed = await parseStringPromise(response.data);
-
-    const article =
-      parsed?.PubmedArticleSet?.PubmedArticle?.[0];
-
-    const articleData =
-      article?.MedlineCitation?.[0]?.Article?.[0];
+    // ========================================
+    // TITLE EXTRACTION
+    // ========================================
 
     const title =
-      articleData?.ArticleTitle?.[0] || 'Unknown Title';
 
-    const abstractArray =
-  articleData?.Abstract?.[0]?.AbstractText || [];
+      $('.heading-title')
+        .first()
+        .text()
+        .replace(/\s+/g, ' ')
+        .trim();
 
-const abstract = abstractArray
-  .map(item => {
+    // ========================================
+    // ABSTRACT EXTRACTION
+    // ========================================
 
-    // If plain string
-    if (typeof item === 'string') {
-      return item;
+    const abstract =
+
+      $('.abstract-content')
+        .text()
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    // ========================================
+    // AUTHOR EXTRACTION
+    // ========================================
+
+    let author =
+      'PubMed Research Article';
+
+    const authors = [];
+
+    $('.authors-list .full-name')
+      .each((index, element) => {
+
+        authors.push(
+          $(element)
+            .text()
+            .trim()
+        );
+      });
+
+    if (authors.length > 0) {
+
+      author =
+        authors.join(', ');
     }
 
-    // If XML object
-    if (typeof item === 'object' && item._) {
-      return item._;
-    }
+    // ========================================
+    // DATE EXTRACTION
+    // ========================================
 
-    return '';
-  })
-  .join(' ');
+    let publishedDate = null;
+
+    const citationText =
+
+      $('.cit')
+        .text()
+        .trim();
+
+    const yearMatch =
+
+      citationText.match(/\d{4}/);
+
+    if (yearMatch) {
+
+      publishedDate =
+        `${yearMatch[0]}-01-01`;
+    }
 
     return {
+
       source_url: url,
+
       source_type: 'pubmed',
+
       title,
-      author: 'PubMed Research Article',
-      published_date: null,
+
+      author,
+
+      published_date:
+        publishedDate,
+
       text: abstract
     };
 
   } catch (error) {
 
     throw new Error(
+
       `PubMed scraping failed: ${error.message}`
     );
   }
-}
+};

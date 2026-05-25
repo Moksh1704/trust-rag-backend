@@ -1,8 +1,5 @@
 import express from 'express';
 
-import {
-  hybridSearch
-} from '../services/searchEngine.js';
 
 const router = express.Router();
 

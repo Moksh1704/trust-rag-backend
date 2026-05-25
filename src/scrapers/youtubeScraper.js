@@ -1,45 +1,110 @@
-import { YoutubeTranscript } from 'youtube-transcript';
+import axios from 'axios';
+import * as cheerio from 'cheerio';
+import { YoutubeTranscript }
+from 'youtube-transcript';
 
-export async function scrapeYouTube(url) {
+export const scrapeYouTube = async (
+  url
+) => {
 
   try {
 
-    let videoId = '';
+    // ========================================
+    // FETCH HTML
+    // ========================================
 
-    // Handle youtube.com URLs
-    if (url.includes('youtube.com')) {
-      videoId = new URL(url).searchParams.get('v');
+    const { data } =
+      await axios.get(url);
+
+    const $ = cheerio.load(data);
+
+    // ========================================
+    // TITLE EXTRACTION
+    // ========================================
+
+    const title =
+
+      $('title')
+        .text()
+        .replace(' - YouTube', '')
+        .trim();
+
+    // ========================================
+    // AUTHOR EXTRACTION
+    // ========================================
+
+    let author =
+      'Unknown Channel';
+
+   const authorMeta =
+
+  $('meta[name="author"]')
+    .attr('content') ||
+
+  $('link[itemprop="name"]')
+    .attr('content') ||
+
+  $('meta[property="og:video:tag"]')
+    .attr('content');
+    if (authorMeta) {
+
+      author = authorMeta;
     }
 
-    // Handle youtu.be URLs
-    if (url.includes('youtu.be')) {
-      videoId = url.split('/').pop();
+    // ========================================
+    // DATE EXTRACTION
+    // ========================================
+
+    let publishedDate = null;
+
+    const publishMeta =
+
+      $('meta[itemprop="datePublished"]')
+        .attr('content');
+
+    if (publishMeta) {
+
+      publishedDate =
+        publishMeta;
     }
 
-    if (!videoId) {
-      throw new Error('Invalid YouTube URL');
-    }
+    // ========================================
+    // TRANSCRIPT EXTRACTION
+    // ========================================
+
+    const transcriptArray =
+
+      await YoutubeTranscript.fetchTranscript(
+        url
+      );
 
     const transcript =
-      await YoutubeTranscript.fetchTranscript(videoId);
 
-    const fullText = transcript
-      .map(item => item.text)
-      .join(' ');
+      transcriptArray
+        .map(item => item.text)
+        .join(' ');
 
     return {
+
       source_url: url,
+
       source_type: 'youtube',
-      title: `YouTube Video ${videoId}`,
-      author: 'Unknown Channel',
-      published_date: null,
-      text: fullText
+
+      title,
+
+      author,
+
+      published_date:
+        publishedDate,
+
+      text: transcript
     };
 
   } catch (error) {
 
     throw new Error(
+
       `YouTube scraping failed: ${error.message}`
     );
   }
-}
+};

@@ -1,8 +1,6 @@
 import express from 'express';
 
-import {
-  evaluateRetrieval
-} from '../services/retrievalEvaluator.js';
+
 
 const router = express.Router();
 

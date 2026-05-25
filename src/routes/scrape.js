@@ -1,52 +1,62 @@
 import express from 'express';
+import fs from 'fs';
+import path from 'path';
 
 import { scrapeBlog } from '../scrapers/blogScraper.js';
 import { scrapeYouTube } from '../scrapers/youtubeScraper.js';
 import { scrapePubMed } from '../scrapers/pubmedScraper.js';
 
-import { chunkText } from '../services/chunker.js';
-import { extractTags } from '../services/tagger.js';
-import { calculateTrustScore } from '../services/trustScorer.js';
-import { enrichMetadata } from '../services/metadataEnricher.js';
-import { deduplicateText } from '../services/deduplicator.js';
-import { buildRetrievalMetadata } from '../services/retrievalMetadata.js';
-import { prepareEmbeddings } from '../services/embeddingPreparer.js';
-import { validateURL } from '../utils/urlValidator.js';
+import { chunkText } from '../services/chunkText.js';
+import { generateEmbeddings } from '../services/embeddingService.js';
+import { storeEmbeddings } from '../services/storeEmbeddings.js';
 
-
-import { addEmbeddings } from '../store/vectorStore.js';
-
-import { asyncHandler, ApiError } from '../utils/errorHandler.js';
+import { calculateTrustScore } from '../services/trustScore.js';
+import { enrichMetadata } from '../services/metadataEnrichment.js';
 
 const router = express.Router();
+
+// ========================================
+// GET ROUTE
+// ========================================
 
 router.get('/', (req, res) => {
 
   res.json({
-    message:
-      'Scrape API working. Use POST request.'
+
+    success: true,
+    message: 'Scrape API is working'
   });
 });
 
-router.post('/',
-  asyncHandler(async (req, res) => {
+// ========================================
+// POST ROUTE
+// ========================================
+
+router.post('/', async (req, res) => {
+
+  try {
 
     const { url } = req.body;
 
+    // ========================================
+    // VALIDATION
+    // ========================================
+
     if (!url) {
 
-      throw new ApiError(
-        400,
-        'URL is required'
-      );
-    }
+      return res.status(400).json({
 
-    // SSRF-safe URL validation
-    await validateURL(url);
+        success: false,
+        error: 'URL is required'
+      });
+    }
 
     let scrapedData;
 
-    // YouTube source
+    // ========================================
+    // SCRAPER SELECTION
+    // ========================================
+
     if (
       url.includes('youtube.com') ||
       url.includes('youtu.be')
@@ -55,104 +65,205 @@ router.post('/',
       scrapedData =
         await scrapeYouTube(url);
 
-    // PubMed source
     } else if (
-      url.includes(
-        'pubmed.ncbi.nlm.nih.gov'
-      )
+      url.includes('pubmed')
     ) {
 
       scrapedData =
         await scrapePubMed(url);
 
-    // Default blog source
     } else {
 
       scrapedData =
         await scrapeBlog(url);
     }
 
-    // Deduplicate BEFORE chunking
-    scrapedData.text =
-      deduplicateText(scrapedData.text);
+    // ========================================
+    // METADATA ENRICHMENT
+    // ========================================
 
-    const contentChunks =
-      chunkText(scrapedData.text);
-
-    const topicTags =
-      extractTags(scrapedData.text);
-
-    const retrievalMetadata =
-      buildRetrievalMetadata(
-        scrapedData,
-        topicTags
-      );
-
-    const embeddingObjects =
-      await prepareEmbeddings(
-        contentChunks,
-        retrievalMetadata,
-        topicTags
-      );
-
-     await addEmbeddings(
-  embeddingObjects
-); 
-
-    const enrichedMetadata =
+    scrapedData =
       enrichMetadata(scrapedData);
 
-    const trustScore =
-      calculateTrustScore({
-        ...scrapedData,
-        topic_tags: topicTags,
-        content_chunks: contentChunks
-      });
+    // ========================================
+    // TRUST SCORING
+    // ========================================
 
-    const response = {
+    const trustData =
+      calculateTrustScore(scrapedData);
 
-      source_url:
-        scrapedData.source_url,
+    scrapedData.trust_score =
+      trustData.trust_score;
 
-      source_type:
-        scrapedData.source_type,
+    scrapedData.trust_breakdown =
+      trustData.trust_breakdown;
 
-      author:
-        scrapedData.author,
+    // ========================================
+    // PARENT-CHILD CHUNKING
+    // ========================================
 
-      published_date:
-        scrapedData.published_date,
+    const parentChunks =
+      chunkText(
+        scrapedData.text || ''
+      );
 
-      language:
-        enrichedMetadata.language,
+    scrapedData.parent_chunks =
+      parentChunks;
 
-      region:
-        enrichedMetadata.region,
+    // ========================================
+    // FLATTEN CHILD CHUNKS
+    // ========================================
 
-      reading_time:
-        enrichedMetadata.reading_time,
+    const childChunks =
+      parentChunks.flatMap(
+        parent =>
+          parent.child_chunks
+      );
 
-      content_length:
-        enrichedMetadata.content_length,
+    // ========================================
+    // EMBEDDING GENERATION
+    // ========================================
 
-      retrieval_metadata:
-        retrievalMetadata,
+    const embeddedChunks =
+      await generateEmbeddings(
 
-      embedding_objects:
-        embeddingObjects,
+        childChunks.map(
+          chunk => chunk.text
+        ),
 
-      topic_tags:
-        topicTags,
+        scrapedData
+      );
+
+    // ========================================
+    // VECTOR STORAGE
+    // ========================================
+
+    storeEmbeddings(
+      embeddedChunks
+    );
+
+    // ========================================
+    // DETERMINE STORAGE FOLDER
+    // ========================================
+
+    let folder = 'blogs';
+
+    if (
+      url.includes('youtube.com') ||
+      url.includes('youtu.be')
+    ) {
+
+      folder = 'youtube';
+    }
+
+    if (
+      url.includes('pubmed')
+    ) {
+
+      folder = 'pubmed';
+    }
+
+    // ========================================
+    // CREATE DIRECTORY
+    // ========================================
+
+    const outputDir = path.join(
+      'scraped_data',
+      folder
+    );
+
+    if (
+      !fs.existsSync(outputDir)
+    ) {
+
+      fs.mkdirSync(
+        outputDir,
+        { recursive: true }
+      );
+    }
+
+    // ========================================
+    // SAFE FILE NAME
+    // ========================================
+
+    const safeTitle = (
+      scrapedData.title ||
+      'scraped_content'
+    )
+      .replace(/[^a-z0-9]/gi, '_')
+      .toLowerCase()
+      .slice(0, 60);
+
+    const fileName =
+      `${safeTitle}_${Date.now()}.json`;
+
+    // ========================================
+    // FINAL FILE PATH
+    // ========================================
+
+    const filePath = path.join(
+      outputDir,
+      fileName
+    );
+
+    // ========================================
+    // SAVE JSON FILE
+    // ========================================
+
+    fs.writeFileSync(
+
+      filePath,
+
+      JSON.stringify(
+        scrapedData,
+        null,
+        2
+      )
+    );
+
+    console.log(
+      `JSON saved at: ${filePath}`
+    );
+
+    // ========================================
+    // RESPONSE
+    // ========================================
+
+    res.status(200).json({
+
+      success: true,
+
+      message:
+        'Scraping completed successfully',
+
+      saved_to: filePath,
+
+      total_parent_chunks:
+        parentChunks.length,
+
+      total_child_chunks:
+        childChunks.length,
 
       trust_score:
-        trustScore,
+        scrapedData.trust_score,
 
-      content_chunks:
-        contentChunks
-    };
+      data: scrapedData
+    });
 
-    res.json(response);
-  })
-);
+  } catch (error) {
+
+    console.error(
+      'Scraping Error:',
+      error
+    );
+
+    res.status(500).json({
+
+      success: false,
+
+      error: error.message
+    });
+  }
+});
 
 export default router;

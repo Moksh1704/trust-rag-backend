@@ -1,0 +1,42 @@
+{
+  "source_url": "https://pubmed.ncbi.nlm.nih.gov/39868069/",
+  "source_type": "pubmed",
+  "title": "Cardiac calcified amorphous tumor as a potential cause of cerebral infarction: A clinical case report",
+  "author": "Hyunjin Kim, Shotaro Kanao, Satoshi Noma, Sumika Yasumura, Shinji Sumiyoshi, Manabu Morishima, Takeshi Kubo, Hyunjin Kim, Hyunjin Kim, Shotaro Kanao, Satoshi Noma, Sumika Yasumura, Shinji Sumiyoshi, Manabu Morishima, Takeshi Kubo",
+  "published_date": "2025-01-01",
+  "text": "We report the case of a 62-year-old male on long-term hemodialysis who was admitted to our hospital due to acute cerebral infarction associated with a cardiac calcified amorphous tumor (CAT). The patient presented with recurrent episodes of syncope and retrograde amnesia. Brain MRI identified multiple acute cerebral infarctions, while transthoracic echocardiography (TTE) revealed a 2.5 cm echogenic mobile mass attached to the ventricular side of the posterior mitral leaflet. The patient underwent surgical resection of the mass. Pathological examination confirmed the diagnosis of a CAT. A chest computed tomography (CT), performed incidentally for pneumonia 6 months prior, revealed extensive calcifications in the mass. Postinfarction imaging showed a reduction in calcifications within the mass, suggesting a potential link between the infarction and changes in the cardiac lesion.",
+  "metadata": {
+    "word_count": 126,
+    "reading_time_minutes": 1,
+    "language": "English",
+    "region": "Global",
+    "tags": [
+      "Medicine",
+      "Neurology",
+      "Cardiology"
+    ],
+    "processed_at": "2026-05-25T08:07:00.821Z"
+  },
+  "trust_score": 0.63,
+  "trust_breakdown": {
+    "author_credibility": 0.8,
+    "citation_count": 0,
+    "domain_authority": 0.9,
+    "recency": 1,
+    "medical_disclaimer_presence": 0
+  },
+  "parent_chunks": [
+    {
+      "parent_id": 1,
+      "text": "We report the case of a 62-year-old male on long-term hemodialysis who was admitted to our hospital due to acute cerebral infarction associated with a cardiac calcified amorphous tumor (CAT). The patient presented with recurrent episodes of syncope and retrograde amnesia. Brain MRI identified multiple acute cerebral infarctions, while transthoracic echocardiography (TTE) revealed a 2.5 cm echogenic mobile mass attached to the ventricular side of the posterior mitral leaflet. The patient underwent surgical resection of the mass. Pathological examination confirmed the diagnosis of a CAT. A chest computed tomography (CT), performed incidentally for pneumonia 6 months prior, revealed extensive calcifications in the mass. Postinfarction imaging showed a reduction in calcifications within the mass, suggesting a potential link between the infarction and changes in the cardiac lesion.",
+      "word_count": 126,
+      "child_chunks": [
+        {
+          "child_id": "1_1",
+          "text": "We report the case of a 62-year-old male on long-term hemodialysis who was admitted to our hospital due to acute cerebral infarction associated with a cardiac calcified amorphous tumor (CAT). The patient presented with recurrent episodes of syncope and retrograde amnesia. Brain MRI identified multiple acute cerebral infarctions, while transthoracic echocardiography (TTE) revealed a 2.5 cm echogenic mobile mass attached to the ventricular side of the posterior mitral leaflet. The patient underwent surgical resection of the mass. Pathological examination confirmed the diagnosis of a CAT. A chest computed tomography (CT), performed incidentally for pneumonia 6 months prior, revealed extensive calcifications in the mass. Postinfarction imaging showed a reduction in calcifications within the mass, suggesting a potential link between the infarction and changes in the cardiac lesion.",
+          "word_count": 126
+        }
+      ]
+    }
+  ]
+}
